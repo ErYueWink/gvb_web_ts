@@ -1,0 +1,10 @@
+:root{
+    --bg:#f0eeee;
+    --active: #1654FF;
+    --login_bg: rgba(255,255,255,0.9)
+}
+
+body[arco-theme='dark']{
+    --bg: #232323;
+    --login_bg: rgba(0,0,0,0.7)
+}
