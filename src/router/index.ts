@@ -1,4 +1,6 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import {createRouter, createWebHistory, type RouteMeta} from 'vue-router'
+import {useStore} from "@/stores/counter";
+import {Message} from "@arco-design/web-vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -25,7 +27,8 @@ const router = createRouter({
       path:'/admin',
       name:"admin",
       meta:{
-        title:'首页'
+        title:'首页',
+        isLogin:true
       },
       component: () => import('../views/admin/index.vue'),
       children:[
@@ -41,7 +44,10 @@ const router = createRouter({
           path:'article',
           name:'article',
           meta:{
-            title:'文章管理'
+            title:'文章管理',
+            isLogin:true,
+            isAdmin:true,
+            isTourist:true
           },
           children:[
             {
@@ -58,7 +64,10 @@ const router = createRouter({
           path:'user',
           name:'user',
           meta:{
-            title:'用户管理'
+            title:'用户管理',
+            isLogin:true,
+            isAdmin:true,
+            isTourist:false
           },
           children:[
             {
@@ -75,7 +84,8 @@ const router = createRouter({
           path: 'user_center',
           name:'user_center',
           meta:{
-            title:'个人中心'
+            title:'个人中心',
+            isLogin:true
           },
           children:[
             {
@@ -92,7 +102,10 @@ const router = createRouter({
           path: 'chat_group',
           name:'chat_group',
           meta:{
-            title:'群聊管理'
+            title:'群聊管理',
+            isLogin:true,
+            isAdmin:true,
+            isTourist:false
           },
           children:[
             {
@@ -109,7 +122,10 @@ const router = createRouter({
           path:'system',
           name:'system',
           meta:{
-            title:'系统管理'
+            title:'系统管理',
+            isLogin:true,
+            isAdmin:true,
+            isTourist:false
           },
           children:[
             {
@@ -134,6 +150,36 @@ const router = createRouter({
       ]
     }
   ]
+})
+
+// 路由前置导航
+router.beforeEach((to,from,next) =>{
+  const store = useStore()
+  const meta = to.meta
+  if (meta.isLogin && !store.isLogin){
+    // 需要登录，但是没有登录
+    Message.warning("请先登录")
+    router.push({name:from.name as string})
+    return
+  }
+  /**
+   * isLogin 登录就能访问
+   * isAdmin 管理员能访问
+   * isTourist 游客能访问
+   */
+  if (store.userInfo.role === 2 && (meta.isAdmin || meta.isTourist)){
+    // 普通用户不能访问管理员或者游客的页面
+    Message.warning("权限不足")
+    router.push({name:from.name as string})
+    return;
+  }
+  // 如果我是游客那就不能访问游客权限为false的
+  if (store.isTourist && meta.isTourist == false){
+    Message.warning("权限不足")
+    router.push({name:from.name as string})
+    return;
+  }
+  next()
 })
 
 export default router

@@ -85,6 +85,18 @@ export const useStore = defineStore('counter', {
   getters: {
     themeString() :string{
       return this.theme ? 'light' : 'dark'
+    },
+    // 判断是否登录
+    isLogin():boolean{
+      return this.userInfo.role !== 0
+    },
+    // 判断是否为管理员
+    isAdmin():boolean{
+      return this.userInfo.role == 1
+    },
+    // 判断是否为游客
+    isTourist():boolean{
+      return this.userInfo.role == 3
     }
   }
 })
