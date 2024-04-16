@@ -46,8 +46,8 @@ const router = createRouter({
           meta:{
             title:'文章管理',
             isLogin:true,
-            isAdmin:true,
-            isTourist:true
+            isAdmin:false,
+            isTourist:false
           },
           children:[
             {

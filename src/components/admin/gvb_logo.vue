@@ -1,15 +1,23 @@
 <template>
   <div class="gvb_logo">
-    <img src="/image/logo.jpg" />
+    <img :src="logoInfo.avatar" />
     <div class="logo_head">
-      <div>肖晓知道</div>
+      <div>{{logoInfo.nickName}}</div>
       <div>xiaoxiaozhidao</div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-
+import {useStore} from "@/stores/counter";
+import {reactive} from "vue";
+const store = useStore()
+const logoInfo = reactive({
+  avatar:"",
+  nickName:""
+})
+logoInfo.avatar = store.userInfo.avatar
+logoInfo.nickName = store.userInfo.nick_name
 </script>
 
 <style lang="scss">

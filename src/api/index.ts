@@ -13,10 +13,29 @@ export interface baseResponse<T>{
     msg: string
 }
 
+// 查询参数
+export interface paramsType {
+    page?: number,
+    limit?: number,
+    key?: string,
+    sort?:number
+}
+
+// 列表查询返回结果
+export interface listResponse<T> {
+    code: number,
+    data:{
+        count:number,
+        list:T[]
+    },
+    msg:string
+}
 // 请求拦截
 useAxios.interceptors.request.use((config) =>{
     const store = useStore()
     config.headers["token"] = store.userInfo.token
+    console.log(config.headers["token"])
+    console.log(store.userInfo.token)
     return config
 })
 
@@ -33,3 +52,11 @@ useAxios.interceptors.response.use((response) =>{
     Message.error(err.message)
     return Promise.reject(err)
 })
+
+export const defaultDelete = <T>(url:string,idList: T[]): Promise<baseResponse<string>> =>{
+    return useAxios.delete(url,{
+        data:{
+            id_list:idList
+        }
+    })
+}

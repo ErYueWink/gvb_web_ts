@@ -25,8 +25,9 @@ export default defineConfig(({mode})=>{
           target:env.VITE_SERVER_URL,
           changeOrigin:true
         },
-        '/upload':{
+        '/uploads':{
           target:env.VITE_SERVER_URL,
+          changeOrigin:true
         }
       }
     }

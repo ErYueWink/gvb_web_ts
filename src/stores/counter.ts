@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import {parseToken} from "@/utils/jwt";
 import { logout } from '@/api/user_api'
+import {Message} from "@arco-design/web-vue";
 
 
 interface userInfoType{
@@ -62,7 +63,7 @@ export const useStore = defineStore('counter', {
       let info = parseToken(token)
       // 将解析到的用户信息赋值给userInfo
       Object.assign(this.userInfo,info)
-      localStorage.setItem('userInfo',JSON.stringify(info))
+      localStorage.setItem('userInfo',JSON.stringify(this.userInfo))
     },
     loadToken(){
       let info = localStorage.getItem('userInfo')
@@ -72,6 +73,15 @@ export const useStore = defineStore('counter', {
       try {
         this.userInfo = JSON.parse(info)
       }catch (e){
+        this.clearUserInfo()
+        return;
+      }
+      let exp = Number(this.userInfo.exp)  * 1000
+      // 获取现在时间
+      let nowTime = new Date().getTime()
+      if (exp - nowTime <= 0){
+        Message.warning("token已过期")
+        this.clearUserInfo()
         return;
       }
     },
@@ -79,7 +89,12 @@ export const useStore = defineStore('counter', {
       // 退出登录
       await logout()
       // 清除用户信息
+      this.clearUserInfo()
+    },
+    // 清除用户信息
+    clearUserInfo(){
       this.userInfo = userInfo
+      localStorage.removeItem("userInfo")
     }
   },
   getters: {

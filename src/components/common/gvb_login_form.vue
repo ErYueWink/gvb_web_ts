@@ -75,6 +75,7 @@ async function loginEmail(){
   Message.success(res.msg)
   // 登录成功保存token
   store.setToken(res.data)
+  console.log(res.data)
   // 登录成功后关闭弹窗，传递自定义事件
   emits('ok')
 }
