@@ -1,6 +1,11 @@
 <template>
   <div>
-    <gvb_table :url="userListApi" :columns="columns" default-delete @add="add" @edit="edit" @remove="remove">
+    <gvb_table :url="userListApi"
+               :columns="columns" default-delete
+               @add="add"
+               @edit="edit" @remove="remove"
+               :action-group="actionGroup"
+               :action-filter-group="actionFilterGroup">
       <template #avatar="{record}">
         <a-avatar :image-url="record.avatar_id" />
       </template>
@@ -8,9 +13,27 @@
   </div>
 </template>
 <script setup lang="ts">
-import Gvb_table from "@/components/admin/gvb_table.vue";
+import Gvb_table, {type optionType} from "@/components/admin/gvb_table.vue";
 import {userListApi} from "@/api/user_api";
+import {roleIdListApi} from "@/api/role_api";
 
+const actionGroup :optionType[]= [
+  {label:'批量拉黑',
+    callback:async (idList: (string | number)[]) :Promise<boolean> =>{
+      return true
+    }
+  }
+]
+
+const actionFilterGroup = [
+  {
+    label:'角色过滤',
+    value:0,
+    column:'role',
+    source: roleIdListApi
+
+  }
+]
 const columns = [
   {
     title: 'id',

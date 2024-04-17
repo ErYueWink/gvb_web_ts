@@ -4,12 +4,17 @@
         <div class="action_create">
           <a-button type="primary" @click="add">创建用户</a-button>
         </div>
-        <div class="action_group">
-          <a-select>分组</a-select>
+        <div class="action_group" v-if="!noActionGroup">
+          <a-select placeholder="操作" allow-clear :options="actionOptions" v-model="actionValue"></a-select>
+          <a-button status="danger" type="primary" v-if="actionValue !== undefined" @click="actionMethod">执行</a-button>
         </div>
         <div class="action_search">
           <a-input-search @keydown.enter="search" placeholder="搜索" v-model="params.key" @search="search"></a-input-search>
         </div>
+      <div class="action_filter">
+        <a-select v-for="item in filterGroup" :placeholder="item.label" :options="item.options as commonOptionType[]"
+                  @change="filterChange(item,$event)" allow-clear />
+      </div>
         <div class="action_other_search"></div>
         <div class="action_slot"></div>
         <div class="action_flush">
@@ -20,7 +25,8 @@
     </div>
     <div class="gvb_table_data">
       <div class="gvb_table_source">
-        <a-table :row-key="rowKey" :columns="props.columns" :data="data.list" :row-selection="rowSelection"
+        <a-table :row-key="rowKey" :columns="props.columns" :data="data.list"
+                 :row-selection="props.noCheck ? undefined : rowSelection"
                  v-model:selectedKeys="selectedKeys" :pagination="false">
 
 <!--          自定义列单元格渲染-->
@@ -29,7 +35,7 @@
 <!--                有render函数，优先执行render函数-->
               <a-table-column v-if="item.render" :title="item.title as string">
                 <template #cell="data">
-                  <component :id="item.render(data)"/>
+                  <component :is="item.render(data) as Component"/>
                 </template>
               </a-table-column>
 <!--              没有slotName执行dataIndex-->
@@ -71,19 +77,40 @@
 
 <script setup lang="ts">
 import {IconRefresh} from "@arco-design/web-vue/es/icon";
-import {reactive, ref} from "vue";
+import {type Component, reactive, ref} from "vue";
 import {Message, type TableData, type TableRowSelection} from "@arco-design/web-vue";
-import type {baseResponse, paramsType} from "@/api";
+import {type baseResponse, defaultOptionList, type paramsType} from "@/api";
 import {TableColumnData} from "@arco-design/web-vue";
 import {dateFormat} from "@/utils/date";
 import {defaultDelete} from "@/api";
+import type {commonOptionType} from "@/types";
+
+export interface optionType{
+  label:string
+  value?:string | number
+  callback?:  (idList: (string | number)[]) => Promise<boolean>
+}
+
+type filterFunc = (params?: paramsType) => Promise<baseResponse<commonOptionType[]>>
+
+export interface actionFilterGroupType{
+  label:string,
+  value: number | string,
+  column: string,
+  source: commonOptionType[] | string | filterFunc
+  options?: commonOptionType[]
+}
 
 interface Props {
   url:(params:paramsType)=>Promise<baseResponse<any>>
   columns: TableColumnData[],
   limit?:number,
   rowKey?:string,
-  defaultDelete?:boolean
+  defaultDelete?:boolean, // 是否启用默认删除 default:false
+  noActionGroup?:boolean, // 是否显示操作组
+  actionGroup?:optionType[],
+  noCheck?:boolean, // 不能选择的 default:false
+  actionFilterGroup?: actionFilterGroupType[]
 }
 
 const props = defineProps<Props>()
@@ -95,7 +122,7 @@ const {
   rowKey = "id"
 } = props
 
-const selectedKeys = ref(['Jane Doe', 'Alisa Ross']);
+const selectedKeys = ref<number[] | string[]>([]);
 
 const rowSelection = reactive<TableRowSelection>({
   type: 'checkbox',
@@ -116,7 +143,10 @@ const params = reactive<paramsType>({
   key:""
 })
 
-async function getList(){
+async function getList(p?: optionType & any){
+  if (p){
+    Object.assign(params,p)
+  }
   let res = await  props.url(params)
   data.list = res.data.list
   data.count = res.data.count
@@ -144,6 +174,8 @@ const add = () =>{
 const  edit = (record: TableData) =>{
   emits("edit",record)
 }
+
+
 
 const urlRegex = /return useAxios.get\("(.*?)",.*?\)/
 
@@ -173,6 +205,110 @@ const remove = async (record: TableData) =>{
 }
 
 
+
+// 分组
+const actionOptions = ref<optionType[]>([
+  {label:"批量删除",value:0}
+])
+
+// TODO 初始化操作组
+const initActionGroup = ()=>{
+  if (!props.actionGroup) return;
+  for (let i = 0; i < props.actionGroup.length; i++) {
+    actionOptions.value.push({
+      label:props.actionGroup[i].label,
+      value:i + 1,
+      callback:props.actionGroup[i].callback
+    })
+  }
+}
+
+initActionGroup()
+const actionValue = ref<string | number | undefined>(undefined)
+
+const removeUserById = async (idList: number[] | string[]) =>{
+  if (props.defaultDelete){
+    // 正则匹配
+    let resRegex = urlRegex.exec(props.url.toString())
+    console.log(resRegex)
+    if (resRegex === null || resRegex.length !== 2){ // 正则匹配失败
+      return
+    }
+    // 匹配成功，格式正确，默认删除
+    let res = await defaultDelete(resRegex[1],idList)
+    console.log(res)
+    if (res.code){
+      Message.error(res.msg)
+      return
+    }
+    Message.success(res.msg)
+    getList()
+    return
+  }
+  emits("remove",idList)
+}
+
+const actionMethod =  () =>{
+  // 判断选中的是否为批量删除
+  if (actionValue.value === 0){
+    // 判断有没有传入ID
+    if (selectedKeys.value.length === 0) {
+      Message.warning("请选择要删除的项")
+      return
+    }
+     removeUserById(selectedKeys.value)
+    console.log(selectedKeys.value)
+    return;
+  }
+  let action = actionOptions.value[actionValue.value]
+   action.callback(selectedKeys.value).then(res =>{
+     if (res){
+       selectedKeys.value = []
+       getList()
+       return
+     }
+   })
+
+}
+
+// TODO 过滤组
+const filterGroup = ref<actionFilterGroupType[]>([])
+
+const filterChange = (item :any,val:any) =>{
+  console.log(item,val)
+  getList({[item.column]: val})
+}
+
+// 初始化过滤组
+const initFilterGroup = async () =>{
+  if (!props.actionFilterGroup) return
+  for (let i = 0; i < props.actionFilterGroup.length; i++) {
+    const item = props.actionFilterGroup[i]
+    let option :commonOptionType[] = []
+    switch (typeof item.source){
+      case "function":
+        let res1 = await (item.source as filterFunc)()
+          option = res1.data
+        break
+      case "object":
+        option = item.source
+        break
+      case "string":
+        let res2 = await (defaultOptionList as filterFunc)(item.source)
+        option = res2.data
+        break
+    }
+    filterGroup.value.push({
+      label:item.label,
+      value:i,
+      column:item.column,
+      source:item.source,
+      options:option
+    })
+  }
+}
+initFilterGroup()
+
 </script>
 
 
@@ -195,6 +331,24 @@ const remove = async (record: TableData) =>{
       margin-right: 0;
       button{
         padding: 10px 10px;
+      }
+    }
+    .action_group{
+      display: flex;
+      .arco-select-view-single{
+        width: 120px;
+      }
+      button{
+        margin-left: 10px;
+      }
+    }
+    .action_filter{
+      display: flex;
+      .arco-select-view-single{
+        width: 120px;
+      }
+      >.arco-select{
+        margin-right: 15px;
       }
     }
   }

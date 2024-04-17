@@ -56,7 +56,6 @@ watch(()=>tabList.value.length,()=>{
 // 加载本地保存的标签页
 function loadTabs(){
   let val = localStorage.getItem("tabList")
-  console.log(JSON.parse(val))
   if (val === null){ // 说明本地没有保存的标签页
     return
   }

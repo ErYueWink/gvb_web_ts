@@ -1,6 +1,7 @@
 import axios from "axios";
 import { Message } from "@arco-design/web-vue";
 import { useStore } from "@/stores/counter";
+import type {commonOptionType} from "@/types";
 
 export const useAxios = axios.create({
     baseURL:'',
@@ -34,8 +35,6 @@ export interface listResponse<T> {
 useAxios.interceptors.request.use((config) =>{
     const store = useStore()
     config.headers["token"] = store.userInfo.token
-    console.log(config.headers["token"])
-    console.log(store.userInfo.token)
     return config
 })
 
@@ -59,4 +58,8 @@ export const defaultDelete = <T>(url:string,idList: T[]): Promise<baseResponse<s
             id_list:idList
         }
     })
+}
+
+export const defaultOptionList = (url: string,params?:paramsType) :Promise<baseResponse<commonOptionType[]>> =>{
+    return useAxios.get("/api/users/role_ids",{params})
 }
