@@ -46,3 +46,13 @@ export function userListApi(params:paramsType) :Promise<listResponse<userInfoTyp
 export function userCreateApi(data: userCreateType) :Promise<baseResponse<string>>{
     return useAxios.post('/api/users',data)
 }
+
+export interface userUpdateType{
+    role: number
+    user_id: number
+    nick_name:string
+}
+
+export function userUpdateApi(data: userUpdateType): Promise<baseResponse<string>>{
+    return useAxios.put('/api/user_role',data)
+}

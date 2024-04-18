@@ -2,7 +2,7 @@
   <div class="gvb_table">
     <div class="gvb_table_head">
         <div class="action_create">
-          <a-button type="primary" v-if="!props.noAdd" @click="add">创建用户</a-button>
+          <a-button type="primary" v-if="!props.noAdd" @click="add">{{props.addLabel}}</a-button>
         </div>
         <div class="action_group" v-if="!noActionGroup">
           <a-select placeholder="操作" allow-clear :options="actionOptions" v-model="actionValue"></a-select>
@@ -65,12 +65,16 @@
                   <template #cell="{record}" v-if="item.slotName === 'avatar'">
                     <slot :name="item.slotName" :record="record" />
                   </template>
+                  <!--                轮播图-->
+                  <template #cell="{record}" v-if="item.slotName === 'banners'">
+                    <slot :name="item.slotName" :record="record" />
+                  </template>
                 </a-table-column>
               </template>
             </template>
           </a-table>
         </div>
-        <div class="gvb_table_page">
+        <div class="gvb_table_page" v-if="!props.noPage">
           <a-pagination  v-model:current="params.page" :default-page-size="params.limit as number"
                          :total="data.count"
                          @change="pageChange"
@@ -123,6 +127,8 @@ interface Props {
   noRemove?:boolean,
   searchPlackHolder?:string, // 搜索框提示信息
   defaultParams?:paramsType&any, // 默认查询参数
+  noPage?:boolean, // 是否显示分页
+  addLabel?:string, // 创建按钮文本
 
 }
 
