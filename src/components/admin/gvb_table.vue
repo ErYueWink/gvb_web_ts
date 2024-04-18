@@ -2,14 +2,17 @@
   <div class="gvb_table">
     <div class="gvb_table_head">
         <div class="action_create">
-          <a-button type="primary" @click="add">创建用户</a-button>
+          <a-button type="primary" v-if="!props.noAdd" @click="add">创建用户</a-button>
         </div>
         <div class="action_group" v-if="!noActionGroup">
           <a-select placeholder="操作" allow-clear :options="actionOptions" v-model="actionValue"></a-select>
-          <a-button status="danger" type="primary" v-if="actionValue !== undefined" @click="actionMethod">执行</a-button>
+          <a-popconfirm content="确定要进行此操作吗?" v-if="!props.noConfirm"  @ok="actionMethod">
+            <a-button status="danger" type="primary" v-if="actionValue !== undefined & actionValue !== ''">执行</a-button>
+          </a-popconfirm>
+          <a-button status="danger" v-else type="primary" v-if="actionValue !== undefined & actionValue !== ''" @click="actionMethod">执行</a-button>
         </div>
         <div class="action_search">
-          <a-input-search @keydown.enter="search" placeholder="搜索" v-model="params.key" @search="search"></a-input-search>
+          <a-input-search @keydown.enter="search" :placeholder="props.searchPlackHolder" v-model="params.key" @search="search"></a-input-search>
         </div>
       <div class="action_filter">
         <a-select v-for="item in filterGroup" :placeholder="item.label" :options="item.options as commonOptionType[]"
@@ -23,55 +26,58 @@
           </a-button>
         </div>
     </div>
-    <div class="gvb_table_data">
-      <div class="gvb_table_source">
-        <a-table :row-key="rowKey" :columns="props.columns" :data="data.list"
-                 :row-selection="props.noCheck ? undefined : rowSelection"
-                 v-model:selectedKeys="selectedKeys" :pagination="false">
+      <a-spin class="gvb_table_data" :loading="isLoading" tip="加载中...">
+        <div class="gvb_table_source">
+          <a-table :row-key="rowKey" :columns="props.columns" :data="data.list"
+                   :row-selection="props.noCheck ? undefined : rowSelection"
+                   v-model:selectedKeys="selectedKeys" :pagination="false">
 
-<!--          自定义列单元格渲染-->
-          <template #columns>
-            <template  v-for="item in props.columns">
-<!--                有render函数，优先执行render函数-->
-              <a-table-column v-if="item.render" :title="item.title as string">
-                <template #cell="data">
-                  <component :is="item.render(data) as Component"/>
-                </template>
-              </a-table-column>
-<!--              没有slotName执行dataIndex-->
-              <a-table-column  v-if="!item.slotName" :title="item.title as string" :data-index="item.dataIndex"></a-table-column>
-<!--              有slotName-->
-              <a-table-column  v-else :title="item.title as string">
-<!--                操作-->
+            <!--          自定义列单元格渲染-->
+            <template #columns>
+              <template  v-for="item in props.columns">
+                <!--                有render函数，优先执行render函数-->
+                <a-table-column v-if="item.render" :title="item.title as string">
+                  <template #cell="data">
+                    <component :is="item.render(data) as Component"/>
+                  </template>
+                </a-table-column>
+                <!--              没有slotName执行dataIndex-->
+                <a-table-column  v-if="!item.slotName" :title="item.title as string" :data-index="item.dataIndex"></a-table-column>
+                <!--              有slotName-->
+                <a-table-column  v-else :title="item.title as string">
+                  <!--                操作-->
                   <template #cell="{record}" v-if="item.slotName === 'action'">
                     <div class="gvb_table_action">
-                      <a-button type="primary" @click="edit(record)">编辑</a-button>
-
+                      <slot name="action_left"></slot>
+                      <a-button type="primary" v-if="!props.noEdit" @click="edit(record)">编辑</a-button>
+                      <slot name="action_middle"></slot>
                       <a-popconfirm content="确定要删除吗?" @ok="remove(record)">
-                        <a-button status="danger" type="primary" >删除</a-button>
+                        <a-button status="danger" v-if="!props.noRemove" type="primary" >删除</a-button>
                       </a-popconfirm>
+                      <slot name="action_right"></slot>
                     </div>
                   </template>
-<!--                日期格式化-->
-                <template #cell="{record}" v-if="item.slotName === 'created_at'">
-                  <span>{{dateFormat(record.created_at)}}</span>
-                </template>
-<!--                头像-->
-                <template #cell="{record}" v-if="item.slotName === 'avatar'">
-                  <slot :name="item.slotName" :record="record" />
-                </template>
-              </a-table-column>
+                  <!--                日期格式化-->
+                  <template #cell="{record}" v-if="item.slotName === 'created_at'">
+                    <span>{{dateFormat(record.created_at)}}</span>
+                  </template>
+                  <!--                头像-->
+                  <template #cell="{record}" v-if="item.slotName === 'avatar'">
+                    <slot :name="item.slotName" :record="record" />
+                  </template>
+                </a-table-column>
+              </template>
             </template>
-          </template>
-        </a-table>
-      </div>
-      <div class="gvb_table_page">
-        <a-pagination  v-model:current="params.page" :default-page-size="params.limit as number"
-                       :total="data.count"
-                       @change="pageChange"
-                       show-jumper show-total/>
-      </div>
-    </div>
+          </a-table>
+        </div>
+        <div class="gvb_table_page">
+          <a-pagination  v-model:current="params.page" :default-page-size="params.limit as number"
+                         :total="data.count"
+                         @change="pageChange"
+                         show-jumper show-total/>
+        </div>
+      </a-spin>
+
   </div>
 </template>
 
@@ -110,12 +116,28 @@ interface Props {
   noActionGroup?:boolean, // 是否显示操作组
   actionGroup?:optionType[],
   noCheck?:boolean, // 不能选择的 default:false
-  actionFilterGroup?: actionFilterGroupType[]
+  actionFilterGroup?: actionFilterGroupType[], // 过滤组
+  noConfirm?:boolean, // 是否显示气泡弹出框 default:false
+  noAdd?:boolean,
+  noEdit?:boolean,
+  noRemove?:boolean,
+  searchPlackHolder?:string, // 搜索框提示信息
+  defaultParams?:paramsType&any, // 默认查询参数
+
 }
 
 const props = defineProps<Props>()
-const emits = defineEmits(["add","edit","remove"])
 
+export type RecordType <T> = T &{
+
+}
+
+// const emits = defineEmits(["add","edit","remove"])
+const emits = defineEmits<{
+  (e:'add') : void,
+  (e:'edit',record:RecordType<any>) : void,
+  (e:'remove',idList:(number | string)[]) :void
+}>()
 // 设置页数默认值
 const {
   limit = 10,
@@ -143,15 +165,19 @@ const params = reactive<paramsType>({
   key:""
 })
 
+const isLoading = ref<boolean>(false)
+
 async function getList(p?: optionType & any){
   if (p){
     Object.assign(params,p)
   }
+  isLoading.value = true
   let res = await  props.url(params)
+  isLoading.value = false
   data.list = res.data.list
   data.count = res.data.count
 }
-getList()
+getList(props.defaultParams)
 
 function pageChange(){
   getList()
@@ -171,7 +197,7 @@ const add = () =>{
   emits("add")
 }
 
-const  edit = (record: TableData) =>{
+const  edit = (record: RecordType<any>) =>{
   emits("edit",record)
 }
 
@@ -179,7 +205,7 @@ const  edit = (record: TableData) =>{
 
 const urlRegex = /return useAxios.get\("(.*?)",.*?\)/
 
-const remove = async (record: TableData) =>{
+const remove = async (record: RecordType<any>) =>{
   let id = record["id"]
   // 启用默认删除
   if (props.defaultDelete){
@@ -309,6 +335,10 @@ const initFilterGroup = async () =>{
 }
 initFilterGroup()
 
+defineExpose({
+  getList
+})
+
 </script>
 
 
@@ -353,6 +383,7 @@ initFilterGroup()
     }
   }
   .gvb_table_data{
+    width: 100%;
     padding: 10px 20px 20px 20px;
     .gvb_table_source{
       .gvb_table_action{
