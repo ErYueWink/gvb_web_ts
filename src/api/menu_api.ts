@@ -1,4 +1,5 @@
 import {type baseResponse, type listResponse, type paramsType, useAxios} from "@/api/index";
+import {reactive} from "vue";
 
 export interface bannerType{
     id: number
@@ -47,3 +48,23 @@ export function menuListApi(params:paramsType) :Promise<listResponse<menuType>>{
 export function menuCreateApi(data:menuCreateRequest):Promise<baseResponse<string>>{
     return useAxios.post('/api/menus',data)
 }
+
+/**
+ * 编辑菜单
+ */
+export function menuUpdateApi(id:number,data:menuCreateRequest):Promise<baseResponse<string>>{
+    return useAxios.put("/api/menus/"+id,data)
+}
+
+export const defaultMenuForm = reactive<menuCreateRequest&{abstractString:string}&{imageIDList:[]}>({
+    title: "", // 菜单标题
+    path: "", // 菜单路径
+    slogan: "", // slogan
+    abstract_time: 7, // 简介切换时间 default: 7s
+    banner_time: 7, // 轮播图切换时间: 7s
+    sort: 1, // 排序 优先级 数字越大优先级越高
+    abstract:[], // 简介
+    image_sort_list:[], // 图片列表
+    abstractString:"",
+    imageIDList:[]
+})
