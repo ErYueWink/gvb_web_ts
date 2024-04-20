@@ -58,15 +58,21 @@
                     </div>
                   </template>
                   <!--                日期格式化-->
-                  <template #cell="{record}" v-if="item.slotName === 'created_at'">
+                  <template #cell="{record}" v-else-if="item.slotName === 'created_at'">
                     <span>{{dateFormat(record.created_at)}}</span>
                   </template>
                   <!--                头像-->
-                  <template #cell="{record}" v-if="item.slotName === 'avatar'">
+                  <template #cell="{record}" v-else-if="item.slotName === 'avatar'">
                     <slot :name="item.slotName" :record="record" />
                   </template>
                   <!--                轮播图-->
-                  <template #cell="{record}" v-if="item.slotName === 'banners'">
+                  <template #cell="{record}" v-else-if="item.slotName === 'banners'">
+                    <slot :name="item.slotName" :record="record" />
+                  </template>
+                  <template #cell="{record}" v-else-if="item.slotName === 'images'">
+                    <slot :name="item.slotName" :record="record" />
+                  </template>
+                  <template #cell="{record}" v-else>
                     <slot :name="item.slotName" :record="record" />
                   </template>
                 </a-table-column>
