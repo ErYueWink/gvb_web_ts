@@ -1,5 +1,6 @@
 <template>
   <div class="menu_list_view">
+    <promotion_create v-model:visible="visible" :record="recordData" @ok="gvbTable.getList()"/>
     <gvb_table ref="gvbTable"
                :url="PromotionListApi"
                :columns="columns"
@@ -27,8 +28,14 @@
 <script setup lang="ts">
 
 import Gvb_table from "@/components/admin/gvb_table.vue";
-import {ref} from "vue";
-import {PromotionListApi, type PromotionType} from "@/api/promotion_api";
+import {reactive, ref} from "vue";
+import {
+  defaultPromotionForm,
+  type PromotionCreateRequest,
+  PromotionListApi,
+  type PromotionType
+} from "@/api/promotion_api";
+import Promotion_create from "@/components/admin/promotion_create.vue";
 
 const columns = [
   {title:'标题',dataIndex:'title'},
@@ -38,16 +45,25 @@ const columns = [
   {title:'更新时间',slotName:'created_at'},
   {title:'操作',slotName:'action'},
 ]
+const recordData = reactive<PromotionType>({
+  title:"",
+  href:"",
+  images:"",
+  is_show:false
+})
 
 const gvbTable = ref()
 
 const visible = ref<boolean>(false)
 
 const add = () =>{
+  Object.assign(recordData,defaultPromotionForm)
+  recordData.id = undefined
   visible.value = true
 }
 
 const edit = (record:PromotionType)=>{
+  Object.assign(recordData,record)
   visible.value = true
 }
 </script>
