@@ -39,7 +39,14 @@
           </template>
         </a-form-item>
         <a-form-item field="banner图" label="banner图">
-          <a-select v-model="form.image_sort_list" placeholder="请选择banner图"></a-select>
+          <a-select v-model="form.imageIDList" multiple placeholder="请选择banner图">
+            <a-option :value="item.id" v-for="item in imageList">
+              <div class="gvb_banner_select">
+                <a-image height="40" :src="item.path"/>
+                <span>{{item.name}}</span>
+              </div>
+            </a-option>
+          </a-select>
         </a-form-item>
       </a-form>
     </a-modal>
@@ -49,7 +56,10 @@
 <script setup lang="ts">
 
 import {reactive, ref} from "vue";
-import type { menuCreateRequest} from "@/api/menu_api";
+import {type imageIDSortList, menuCreateApi, type menuCreateRequest} from "@/api/menu_api";
+import type {imageIDType} from "@/api/image_api";
+import {imagesNameListApi} from "@/api/image_api";
+import {Message} from "@arco-design/web-vue";
 
 const props = defineProps({
   visible:Boolean,
@@ -59,7 +69,7 @@ const emits = defineEmits(['update:visible']);
 
 const formRef =ref()
 
-const form = reactive<menuCreateRequest&{abstractString:string}>({
+const form = reactive<menuCreateRequest&{abstractString:string}&{imageIDList:[]}>({
   title: "", // 菜单标题
   path: "", // 菜单路径
   slogan: "", // slogan
@@ -68,18 +78,66 @@ const form = reactive<menuCreateRequest&{abstractString:string}>({
   sort: 1, // 排序 优先级 数字越大优先级越高
   abstract:[], // 简介
   image_sort_list:[], // 图片列表
-  abstractString:""
+  abstractString:"",
+  imageIDList:[]
+})
+
+const defaultForm = reactive<menuCreateRequest&{abstractString:string}&{imageIDList:[]}>({
+  title: "", // 菜单标题
+  path: "", // 菜单路径
+  slogan: "", // slogan
+  abstract_time: 7, // 简介切换时间 default: 7s
+  banner_time: 7, // 轮播图切换时间: 7s
+  sort: 1, // 排序 优先级 数字越大优先级越高
+  abstract:[], // 简介
+  image_sort_list:[], // 图片列表
+  abstractString:"",
+  imageIDList:[]
 })
 
 const menuCreateOk = async () =>{
   let val = await formRef.value.validate()
-  if (val) return
+  if (val) return false
   form.abstract = form.abstractString.split("\n")
-  console.log(form)
+  let imageSortIDList: imageIDSortList[] = []
+  for (let i = 0; i < form.imageIDList.length; i++) {
+    let image = form.imageIDList[i]
+    imageSortIDList.push({
+      image_id: image,
+      sort:form.imageIDList.length - i
+    })
+  }
+  form.image_sort_list = imageSortIDList
+  let res = await menuCreateApi(form)
+  if (res.code){
+    Message.error(res.msg)
+    return
+  }
+  Object.assign(form,defaultForm)
+  Message.success(res.msg)
+  emits('update:visible',false) // 关闭弹出框
+  emits('ok')
+
 
 }
+
+const imageList = ref<imageIDType[]>([])
+
+const getList = async () =>{
+
+  let res = await imagesNameListApi()
+  imageList.value = res.data
+}
+getList()
 </script>
 
 <style lang="scss">
-
+.gvb_banner_select{
+  display: flex;
+  padding: 10px 0;
+  img{
+    margin-right: 10px;
+    border-radius: 5px;
+  }
+}
 </style>

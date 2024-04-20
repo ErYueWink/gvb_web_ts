@@ -1,6 +1,6 @@
 <template>
   <div class="menu_list_view">
-    <menu_create v-model:visible="visible"/>
+    <menu_create v-model:visible="visible" @ok="gvbTable.getList()"/>
     <gvb_table ref="gvbTable"
                :url="menuListApi"
                :columns="columns"
