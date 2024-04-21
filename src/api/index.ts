@@ -31,6 +31,11 @@ export interface listResponse<T> {
     },
     msg:string
 }
+
+export interface qiniuyunResponse<T>{
+    code:number,
+    data:T[]
+}
 // 请求拦截
 useAxios.interceptors.request.use((config) =>{
     const store = useStore()

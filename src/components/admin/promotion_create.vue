@@ -18,7 +18,7 @@
         <a-form-item field="images" label="图片路径"
                      :rules="[{required:true,message:'请输入图片路径'}]"
                      :validate-trigger="['blur']">
-          <a-input v-model="form.images" placeholder="请输入图片路径"></a-input>
+          <gvb_upload_image v-model="form.images"/>
         </a-form-item>
         <a-form-item field="is_show" label="是否启用">
           <a-switch v-model="form.is_show"/>
@@ -32,6 +32,7 @@
 
 import {reactive, ref} from "vue";
 import {Message} from "@arco-design/web-vue";
+import Gvb_upload_image from "@/components/common/gvb_upload_image.vue";
 import {
   defaultPromotionForm,
   promotionCreateApi,
